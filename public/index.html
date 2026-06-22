@@ -52,6 +52,13 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .sidebar-collapsed #resize-handle { display: none; }
 .sidebar-collapsed #sidebar-toggle { border-left: 1px solid var(--border); }
 button { cursor: pointer; font-family: var(--mono); }
+.agent-bar-btn {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.1em;
+  padding: 6px 14px; background: none; border: 1px solid var(--border);
+  white-space: nowrap; transition: background 0.15s;
+}
+.agent-bar-btn:hover { background: var(--border); }
+.agent-bar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 a { text-decoration: none; }
 
 /* ── HEADER ─────────────────────────────────────────────────────── */
@@ -101,6 +108,7 @@ a { text-decoration: none; }
 #org-view.on { display: block; }
 #feed-wrap { display: flex; flex-direction: column; height: 100%; }
 #feed-wrap.hide { display: none; }
+#sidebar { display: none !important; }
 
 /* ── ORG CHART ───────────────────────────────────────────────────── */
 .org-ceo {
@@ -246,13 +254,22 @@ a { text-decoration: none; }
 <!-- MAIN -->
 <div id="main">
 
-  <!-- FEED + SIDEBAR (command tab) -->
-  <div id="feed-wrap" style="display:flex;flex:1;overflow:hidden">
+  <!-- AGENT BAR + FEED (command tab) -->
+  <div id="feed-wrap" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div id="agent-bar">
+      <span style="font-size:8px;color:var(--textdim);letter-spacing:0.14em;margin-right:6px">NICHE:</span>
+      <input id="niche-input" value="Small Business Owner Tools" style="background:var(--card);border:1px solid var(--border);padding:5px 10px;color:var(--text);font-size:10px;font-family:var(--mono);outline:none;width:220px;" />
+      <span style="width:1px;height:20px;background:var(--border);margin:0 6px"></span>
+      <button class="agent-bar-btn" onclick="fire('full_pipeline')" id="btn-full" style="border-color:var(--amber);color:var(--amber)">⚡ FULL PIPELINE</button>
+      <button class="agent-bar-btn" onclick="fire('market_research')" id="btn-mkt" style="border-color:var(--blue);color:var(--blue)">🔍 MARKET RESEARCH</button>
+      <button class="agent-bar-btn" onclick="fire('product_creator')" id="btn-prod" style="border-color:var(--purple);color:var(--purple)">✍️ PRODUCT CREATOR</button>
+      <button class="agent-bar-btn" onclick="fire('analytics')" id="btn-anl" style="border-color:var(--green);color:var(--green)">📊 ANALYTICS</button>
+      <button class="agent-bar-btn" onclick="fire('listing_manager')" id="btn-mgr" style="border-color:var(--blue);color:var(--blue)">📋 LISTING MANAGER</button>
+      <span style="margin-left:auto;font-size:8px;color:var(--textdim)">CRON: <span style="color:var(--amber)">09:00 UTC</span> daily</span>
+    </div>
     <div id="feed">
       <div id="runs-container"></div>
     </div>
-    <div id="resize-handle" title="Drag to resize"></div>
-    <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</button>
     <div id="sidebar">
       <div class="sb-section">
         <div class="sb-label">TARGET NICHE</div>
