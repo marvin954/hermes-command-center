@@ -208,6 +208,7 @@ a { text-decoration:none; }
       <button class="abar-btn" id="ab-creator" onclick="fire('product_creator')" style="color:var(--purple);border-color:rgba(155,89,245,0.4)">✍️ PRODUCT CREATOR</button>
       <button class="abar-btn" id="ab-analytics" onclick="fire('analytics')" style="color:var(--green);border-color:rgba(0,208,132,0.4)">📊 ANALYTICS</button>
       <button class="abar-btn" id="ab-manager" onclick="fire('listing_manager')" style="color:var(--blue);border-color:rgba(61,142,245,0.4)">📋 LISTING MANAGER</button>
+      <button class="abar-btn" id="ab-fiximg" onclick="fire('fix_images')" style="color:var(--green);border-color:rgba(0,208,132,0.4)">🖼️ FIX IMAGES</button>
       <span class="cron-info">AUTO-RUN: <span style="color:var(--amber)">09:00 UTC</span> daily</span>
     </div>
     <div id="feed">
@@ -441,6 +442,7 @@ const AGENT_META = {
   product_creator: { name:"PRODUCT CREATOR",  icon:"✍️", color:"var(--purple)" },
   analytics:       { name:"ANALYTICS",        icon:"📊", color:"var(--green)" },
   listing_manager: { name:"LISTING MANAGER",  icon:"📋", color:"var(--blue)" },
+  fix_images:      { name:"FIX ALL IMAGES",   icon:"🖼️", color:"var(--green)" },
 };
 
 async function fire(agentId) {
@@ -557,6 +559,17 @@ function renderResult(r) {
         <div class="product-title">${p.title}</div>
         <div class="product-price">${p.price} &nbsp;·&nbsp; <span style="color:var(--dim)">${p.category||"Digital Downloads"}</span></div>
       </div>`).join("")}</div>`;
+  }
+
+  if (r.agentId === "fix_images") {
+    const log = r.result.log || [];
+    const logHtml = log.map((l: string) =>
+      `<div class="log-line" style="color:${l.startsWith("✓")?"var(--green)":l.startsWith("✗")?"var(--red)":"var(--dim)"}">${l}</div>`
+    ).join("");
+    const summary = r.result.fixed !== undefined
+      ? `<div style="margin-top:12px;padding:10px 14px;background:var(--card);border-left:2px solid var(--green)"><span style="color:var(--green);font-weight:800">${r.result.fixed} images uploaded</span><span style="color:var(--dim)"> · ${r.result.remaining||0} remaining</span></div>`
+      : "";
+    return `<div class="result-log">${logHtml}${summary}</div>`;
   }
 
   if (r.agentId === "listing_manager" && Array.isArray(r.result)) {
