@@ -598,7 +598,23 @@ function renderRuns() {
       if (r.agentId==="analytics" && r.result.report) {
         resultHtml = `<div style="font-size:11px;color:var(--text);line-height:1.9;white-space:pre-wrap;padding:16px 20px;background:var(--bg);font-family:Georgia,serif">${r.result.report.replace(/#{1,3} /g,"").replace(/\*\*/g,"").replace(/`/g,"")}</div>`;
       } else if (r.agentId==="full_pipeline" && r.result.log) {
-        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.log.map(l=>`<div style="font-size:10px;color:${l.startsWith("✓")?"var(--green)":l.startsWith("✗")?"var(--red)":"var(--textdim)"};margin-bottom:4px;font-family:var(--mono)">${l}</div>`).join("")}${r.result.published&&r.result.published.length?r.result.published.map(p=>`<div style="margin-top:8px;padding:8px 10px;background:var(--card);border-left:2px solid var(--green)"><div style="font-size:10px;color:var(--green);font-family:var(--mono)">${p.status.toUpperCase()}</div><div style="font-size:11px;color:var(--text);margin:3px 0">${p.title}</div><a href="${p.url}" target="_blank" style="font-size:9px;color:var(--amber);font-family:var(--mono)">${p.url}</a></div>`).join(""):""}</div>`;
+        const logHtml = r.result.log.map(l=>`<div style="font-size:10px;color:${l.startsWith("✓")?"var(--green)":l.startsWith("✗")?"var(--red)":"var(--textdim)"};margin-bottom:4px;font-family:var(--mono)">${l}</div>`).join("");
+        const publishedHtml = (r.result.published||[]).map(p=>`
+          <div style="margin-top:12px;background:var(--card);border:1px solid var(--green);border-left:3px solid var(--green)">
+            <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;justify-content:space-between">
+              <div>
+                <div style="font-size:8px;color:var(--green);font-family:var(--mono);font-weight:800;margin-bottom:4px">${p.status.toUpperCase()} · ${p.image_generated?"IMAGE ✓":"IMAGE ✗"} · ${p.file_uploaded?"PDF ✓":"PDF ✗"}</div>
+                <div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:4px">${p.title}</div>
+                <div style="font-size:9px;color:var(--textdim);font-family:var(--mono)">#${p.listing_id}</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-shrink:0">
+                <button onclick="previewListing('${p.listing_id}')" style="font-size:8px;font-family:var(--mono);font-weight:800;color:var(--amber);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);padding:5px 12px;cursor:pointer;letter-spacing:0.1em">PREVIEW</button>
+                <a href="${p.url}" target="_blank" style="font-size:8px;font-family:var(--mono);font-weight:800;color:var(--bg);background:var(--green);border:none;padding:6px 12px;letter-spacing:0.1em;text-decoration:none;display:inline-flex;align-items:center">VIEW ON ETSY ↗</a>
+              </div>
+            </div>
+            <div id="preview-${p.listing_id}" style="display:none;border-top:1px solid var(--border)"></div>
+          </div>`).join("");
+        resultHtml = `<div style="padding:14px 20px;background:var(--bg)">${logHtml}${publishedHtml}</div>`;
       } else if (r.agentId==="market_research" && r.result.trending) {
         resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.trending.map(t=>`<div style="margin-bottom:8px;padding:12px 14px;background:var(--card);border-left:2px solid var(--amber)"><div style="font-size:12px;color:var(--amber);font-weight:800;margin-bottom:6px">${t.niche}</div><div style="font-size:10px;color:var(--textdim);margin-bottom:4px">Demand: <span style="color:var(--green)">${t.demand}</span> &nbsp;·&nbsp; Competition: <span style="color:var(--blue)">${t.competition}</span> &nbsp;·&nbsp; Avg price: <span style="color:var(--amber)">${t.avg_price}</span></div><div style="font-size:10px;color:var(--textdim)">${(t.products||[]).slice(0,3).join(", ")}</div></div>`).join("")}</div>`;
       } else if (r.agentId==="product_creator" && Array.isArray(r.result)) {
@@ -678,6 +694,47 @@ function switchTab(el, tab) {
   document.getElementById("org-view").style.display      = tab==="org"      ? "flex" : "none";
   document.getElementById("projects-view").style.display = tab==="projects" ? "flex" : "none";
   if (tab==="listings") loadListings();
+}
+
+// ── PREVIEW LISTING ────────────────────────────────────────────────
+async function previewListing(listingId) {
+  const el = document.getElementById("preview-" + listingId);
+  if (!el) return;
+  if (el.style.display !== "none") { el.style.display = "none"; return; }
+  el.style.display = "block";
+  el.innerHTML = `<div style="padding:14px 20px;font-size:10px;color:var(--textdim);font-family:var(--mono)">Loading preview...</div>`;
+  try {
+    const res = await fetch("https://v0-etsymind-react-app-git-main-marvin-stokes-projects.vercel.app/api/etsy/listing?id=" + listingId);
+    const data = await res.json();
+    const images = (data.images || []).map(img =>
+      `<img src="${img.url_570xN}" style="width:180px;height:180px;object-fit:cover;border:1px solid var(--border)" />`
+    ).join("");
+    const tags = (data.tags || []).map(t =>
+      `<span style="font-size:8px;padding:2px 7px;background:var(--textmute);color:var(--textdim);margin:2px;display:inline-block">${t}</span>`
+    ).join("");
+    const files = (data.files || []).map(f =>
+      `<div style="font-size:9px;color:var(--green);font-family:var(--mono)">📄 ${f.filename} (${(f.filesize/1024).toFixed(1)} KB)</div>`
+    ).join("");
+    el.innerHTML = `
+      <div style="padding:16px 20px;display:grid;grid-template-columns:200px 1fr;gap:20px">
+        <div>
+          ${images || `<div style="width:180px;height:180px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--textdim)">NO IMAGE</div>`}
+          <div style="margin-top:8px">
+            <div style="font-size:9px;color:var(--textdim);margin-bottom:4px">DOWNLOADABLE FILES</div>
+            ${files || `<div style="font-size:9px;color:var(--red);font-family:var(--mono)">No files uploaded</div>`}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--textdim);margin-bottom:4px;font-family:var(--mono)">STATUS: <span style="color:${data.state==="active"?"var(--green)":"var(--amber)}">${(data.state||"").toUpperCase()}</span> · PRICE: <span style="color:var(--amber)">$${data.price?.amount/data.price?.divisor||"?"}</span></div>
+          <div style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:10px;line-height:1.4">${data.title||""}</div>
+          <div style="font-size:10px;color:var(--textdim);line-height:1.8;margin-bottom:12px;max-height:120px;overflow-y:auto">${data.description||""}</div>
+          <div style="font-size:8px;color:var(--textdim);margin-bottom:6px;font-family:var(--mono)">TAGS</div>
+          <div>${tags}</div>
+        </div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="padding:14px 20px;font-size:10px;color:var(--red);font-family:var(--mono)">Preview failed: ${e.message}</div>`;
+  }
 }
 
 // ── INIT ───────────────────────────────────────────────────────────
