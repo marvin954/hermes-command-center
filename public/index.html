@@ -563,7 +563,7 @@ function renderResult(r) {
 
   if (r.agentId === "fix_images") {
     const log = r.result.log || [];
-    const logHtml = log.map((l: string) =>
+    const logHtml = log.map((l) =>
       `<div class="log-line" style="color:${l.startsWith("✓")?"var(--green)":l.startsWith("✗")?"var(--red)":"var(--dim)"}">${l}</div>`
     ).join("");
     const summary = r.result.fixed !== undefined
