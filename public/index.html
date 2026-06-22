@@ -39,16 +39,18 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   width: 2px; height: 40px; background: var(--borderhi); border-radius: 2px;
 }
 #sidebar-toggle {
-  position: absolute; top: 12px; right: -12px;
-  width: 24px; height: 24px; background: var(--card);
-  border: 1px solid var(--border); border-radius: 50%;
+  width: 20px; flex-shrink: 0; background: var(--card);
+  border: none; border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  cursor: pointer; font-size: 10px; color: var(--textdim);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; z-index: 10; font-size: 10px; color: var(--textdim);
+  padding: 0; writing-mode: vertical-lr;
 }
-#sidebar-toggle:hover { border-color: var(--amber); color: var(--amber); }
+#sidebar-toggle:hover { background: var(--border); color: var(--amber); }
 #sidebar { position: relative; }
-.sidebar-collapsed #sidebar { width: 0 !important; overflow: hidden; padding: 0; }
+.sidebar-collapsed #sidebar { width: 0 !important; overflow: hidden; padding: 0; border: none; }
 .sidebar-collapsed #resize-handle { display: none; }
+.sidebar-collapsed #sidebar-toggle { border-left: 1px solid var(--border); }
 button { cursor: pointer; font-family: var(--mono); }
 a { text-decoration: none; }
 
@@ -130,8 +132,9 @@ a { text-decoration: none; }
 /* ── RUN CARDS ───────────────────────────────────────────────────── */
 .run-card {
   background: var(--card); border: 1px solid var(--border);
-  margin-bottom: 1px; cursor: pointer;
+  margin-bottom: 1px;
 }
+.run-card.active-run { border-color: var(--amber); }
 .run-card-inner { padding: 14px 18px; display: flex; gap: 14px; align-items: flex-start; cursor: pointer; }
 .run-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 .run-meta { flex: 1; min-width: 0; }
@@ -249,8 +252,8 @@ a { text-decoration: none; }
       <div id="runs-container"></div>
     </div>
     <div id="resize-handle" title="Drag to resize"></div>
+    <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</button>
     <div id="sidebar">
-      <div id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</div>
       <div class="sb-section">
         <div class="sb-label">TARGET NICHE</div>
         <input class="sb-input" id="niche-input" value="Small Business Owner Tools" />
@@ -591,8 +594,8 @@ function renderRuns() {
       resultHtml = `<div style="padding:12px 14px;background:var(--bg);font-size:10px;color:var(--red);font-family:var(--mono)">${r.error}</div>`;
     }
 
-    return `<div class="run-card">
-      <div class="run-card-inner" style="border-left:3px solid ${r.color}" onclick="toggleRun('${r.id}')">
+    return `<div class="run-card ${expanded===r.id?"active-run":""}">
+      <div class="run-card-inner" style="border-left:3px solid ${r.color};cursor:pointer" onclick="toggleRun('${r.id}')">
         <div class="run-icon">${r.icon}</div>
         <div class="run-meta">
           <div class="run-name" style="color:${r.color}">${r.name} ${badge}</div>
@@ -607,8 +610,15 @@ function renderRuns() {
 }
 
 function toggleRun(id) {
-  expanded = expanded===id ? null : id;
+  expanded = (expanded === id) ? null : id;
   renderRuns();
+  // Scroll expanded card into view
+  if (expanded) {
+    setTimeout(() => {
+      const el = document.querySelector(".run-card.active-run");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 50);
+  }
 }
 
 // ── LISTINGS ───────────────────────────────────────────────────────
@@ -698,11 +708,9 @@ function toggleSidebar() {
     wrap.classList.remove("sidebar-collapsed");
     sidebar.style.width = "260px";
     toggle.textContent = "◀";
-    toggle.title = "Collapse sidebar";
   } else {
     wrap.classList.add("sidebar-collapsed");
     toggle.textContent = "▶";
-    toggle.title = "Expand sidebar";
   }
 }
 </script>
