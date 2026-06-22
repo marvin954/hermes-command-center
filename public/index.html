@@ -26,6 +26,29 @@
 }
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--mono); overflow-x: hidden; }
 ::-webkit-scrollbar { width: 2px; } ::-webkit-scrollbar-thumb { background: var(--borderhi); }
+
+/* ── RESIZE HANDLE ───────────────────────────────────────────────── */
+#resize-handle {
+  width: 4px; background: var(--border); cursor: col-resize;
+  flex-shrink: 0; transition: background 0.15s; position: relative;
+}
+#resize-handle:hover, #resize-handle.dragging { background: var(--amber); }
+#resize-handle::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px; height: 40px; background: var(--borderhi); border-radius: 2px;
+}
+#sidebar-toggle {
+  position: absolute; top: 12px; right: -12px;
+  width: 24px; height: 24px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 10; font-size: 10px; color: var(--textdim);
+}
+#sidebar-toggle:hover { border-color: var(--amber); color: var(--amber); }
+#sidebar { position: relative; }
+.sidebar-collapsed #sidebar { width: 0 !important; overflow: hidden; padding: 0; }
+.sidebar-collapsed #resize-handle { display: none; }
 button { cursor: pointer; font-family: var(--mono); }
 a { text-decoration: none; }
 
@@ -67,9 +90,9 @@ a { text-decoration: none; }
 .tab.on { border-bottom-color: var(--amber); color: var(--text); }
 
 /* ── MAIN LAYOUT ─────────────────────────────────────────────────── */
-#main { display: flex; height: calc(100vh - 52px - 56px - 41px); }
-#feed { flex: 1; overflow-y: auto; padding: 20px 24px; border-right: 1px solid var(--border); }
-#sidebar { width: 300px; overflow-y: auto; padding: 16px; background: var(--surface); flex-shrink: 0; }
+#main { display: flex; height: calc(100vh - 52px - 72px - 41px); overflow: hidden; }
+#feed { flex: 1; overflow-y: auto; padding: 16px 20px; min-width: 0; }
+#sidebar { width: 260px; overflow-y: auto; padding: 14px; background: var(--surface); flex-shrink: 0; border-left: 1px solid var(--border); }
 
 /* ── ORG CHART VIEW ──────────────────────────────────────────────── */
 #org-view { padding: 20px 24px; display: none; }
@@ -109,15 +132,15 @@ a { text-decoration: none; }
   background: var(--card); border: 1px solid var(--border);
   margin-bottom: 1px; cursor: pointer;
 }
-.run-card-inner { padding: 11px 14px; display: flex; gap: 12px; align-items: flex-start; }
+.run-card-inner { padding: 14px 18px; display: flex; gap: 14px; align-items: flex-start; cursor: pointer; }
 .run-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 .run-meta { flex: 1; min-width: 0; }
-.run-name { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 3px; }
-.run-msg { font-size: 9px; color: var(--textdim); }
+.run-name { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 5px; }
+.run-msg { font-size: 10px; color: var(--textdim); margin-top: 2px; }
 .run-time { font-size: 8px; color: var(--textdim); margin-left: auto; flex-shrink: 0; }
 .run-detail { display: none; border-top: 1px solid var(--border); padding: 12px 14px; background: var(--bg); }
 .run-detail.on { display: block; }
-.run-detail pre { font-size: 9px; color: var(--textdim); white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow-y: auto; }
+.run-detail pre { font-size: 9px; color: var(--textdim); white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
 .empty-state { padding: 60px 0; text-align: center; }
 .empty-icon { font-size: 28px; margin-bottom: 12px; }
 .empty-t { font-size: 12px; color: var(--textdim); }
@@ -225,7 +248,9 @@ a { text-decoration: none; }
     <div id="feed">
       <div id="runs-container"></div>
     </div>
+    <div id="resize-handle" title="Drag to resize"></div>
     <div id="sidebar">
+      <div id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</div>
       <div class="sb-section">
         <div class="sb-label">TARGET NICHE</div>
         <input class="sb-input" id="niche-input" value="Small Business Owner Tools" />
@@ -551,15 +576,15 @@ function renderRuns() {
     let resultHtml = "";
     if (r.status==="done" && r.result && expanded===r.id) {
       if (r.agentId==="analytics" && r.result.report) {
-        resultHtml = `<div style="font-size:10px;color:var(--textdim);line-height:1.8;white-space:pre-wrap;padding:12px 14px;background:var(--bg)">${r.result.report.replace(/[#*`]/g,"")}</div>`;
+        resultHtml = `<div style="font-size:11px;color:var(--text);line-height:1.9;white-space:pre-wrap;padding:16px 20px;background:var(--bg);font-family:Georgia,serif">${r.result.report.replace(/#{1,3} /g,"").replace(/\*\*/g,"").replace(/`/g,"")}</div>`;
       } else if (r.agentId==="full_pipeline" && r.result.log) {
         resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.log.map(l=>`<div style="font-size:10px;color:${l.startsWith("✓")?"var(--green)":l.startsWith("✗")?"var(--red)":"var(--textdim)"};margin-bottom:4px;font-family:var(--mono)">${l}</div>`).join("")}${r.result.published&&r.result.published.length?r.result.published.map(p=>`<div style="margin-top:8px;padding:8px 10px;background:var(--card);border-left:2px solid var(--green)"><div style="font-size:10px;color:var(--green);font-family:var(--mono)">${p.status.toUpperCase()}</div><div style="font-size:11px;color:var(--text);margin:3px 0">${p.title}</div><a href="${p.url}" target="_blank" style="font-size:9px;color:var(--amber);font-family:var(--mono)">${p.url}</a></div>`).join(""):""}</div>`;
       } else if (r.agentId==="market_research" && r.result.trending) {
-        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.trending.map(t=>`<div style="margin-bottom:10px;padding:8px 10px;background:var(--card)"><div style="font-size:10px;color:var(--amber);font-family:var(--mono);font-weight:800;margin-bottom:4px">${t.niche}</div><div style="font-size:9px;color:var(--textdim)">Demand: <span style="color:var(--green)">${t.demand}</span> · Competition: <span style="color:var(--blue)">${t.competition}</span> · Avg: <span style="color:var(--amber)">${t.avg_price}</span></div><div style="font-size:9px;color:var(--textdim);margin-top:4px">${(t.products||[]).slice(0,2).join(" · ")}</div></div>`).join("")}</div>`;
+        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.trending.map(t=>`<div style="margin-bottom:8px;padding:12px 14px;background:var(--card);border-left:2px solid var(--amber)"><div style="font-size:12px;color:var(--amber);font-weight:800;margin-bottom:6px">${t.niche}</div><div style="font-size:10px;color:var(--textdim);margin-bottom:4px">Demand: <span style="color:var(--green)">${t.demand}</span> &nbsp;·&nbsp; Competition: <span style="color:var(--blue)">${t.competition}</span> &nbsp;·&nbsp; Avg price: <span style="color:var(--amber)">${t.avg_price}</span></div><div style="font-size:10px;color:var(--textdim)">${(t.products||[]).slice(0,3).join(", ")}</div></div>`).join("")}</div>`;
       } else if (r.agentId==="product_creator" && Array.isArray(r.result)) {
-        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.map(p=>`<div style="margin-bottom:8px;padding:8px 10px;background:var(--card)"><div style="font-size:11px;color:var(--text);font-weight:600;margin-bottom:3px">${p.title}</div><div style="font-size:9px;color:var(--amber);font-family:var(--mono)">${p.price}</div></div>`).join("")}</div>`;
+        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.map(p=>`<div style="margin-bottom:6px;padding:12px 14px;background:var(--card);border-left:2px solid var(--purple)"><div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:4px">${p.title}</div><div style="font-size:10px;color:var(--amber);font-family:var(--mono)">${p.price} &nbsp;·&nbsp; <span style="color:var(--textdim)">${p.category||"Digital Downloads"}</span></div></div>`).join("")}</div>`;
       } else {
-        resultHtml = `<div style="padding:12px 14px;background:var(--bg)"><pre style="font-size:9px;color:var(--textdim);white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto">${JSON.stringify(r.result,null,2)}</pre></div>`;
+        resultHtml = `<div style="padding:12px 14px;background:var(--bg)"><pre style="font-size:9px;color:var(--textdim);white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto">${JSON.stringify(r.result,null,2)}</pre></div>`;
       }
     }
     if (r.status==="error" && expanded===r.id) {
@@ -631,6 +656,55 @@ function switchTab(el, tab) {
 // ── INIT ───────────────────────────────────────────────────────────
 renderRuns();
 loadStats();
+
+// ── RESIZE HANDLE ──────────────────────────────────────────────────
+(function() {
+  const handle = document.getElementById("resize-handle");
+  const sidebar = document.getElementById("sidebar");
+  const toggle = document.getElementById("sidebar-toggle");
+  let dragging = false, startX = 0, startW = 0;
+
+  handle.addEventListener("mousedown", e => {
+    dragging = true;
+    startX = e.clientX;
+    startW = sidebar.offsetWidth;
+    handle.classList.add("dragging");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const delta = startX - e.clientX; // drag left = wider sidebar
+    const newW = Math.min(500, Math.max(180, startW + delta));
+    sidebar.style.width = newW + "px";
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove("dragging");
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  });
+})();
+
+function toggleSidebar() {
+  const wrap = document.getElementById("feed-wrap");
+  const toggle = document.getElementById("sidebar-toggle");
+  const sidebar = document.getElementById("sidebar");
+  if (wrap.classList.contains("sidebar-collapsed")) {
+    wrap.classList.remove("sidebar-collapsed");
+    sidebar.style.width = "260px";
+    toggle.textContent = "◀";
+    toggle.title = "Collapse sidebar";
+  } else {
+    wrap.classList.add("sidebar-collapsed");
+    toggle.textContent = "▶";
+    toggle.title = "Expand sidebar";
+  }
+}
 </script>
 </body>
 </html>
