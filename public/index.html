@@ -491,7 +491,7 @@ async function fire(agentId) {
   const start = Date.now();
 
   const run = { id:runId, agentId, name:agent.name, icon:agent.icon, color:agent.color,
-                status:"running", time:ts(), result:null, error:null };
+                status:"running", time:ts(), result:null, error:null, dur:null };
   runs.unshift(run);
   activeCount++;
   renderRuns();
@@ -546,19 +546,37 @@ function renderRuns() {
       : r.status==="done"
       ? `<span class="badge badge-done">DONE ${r.dur||""}</span>`
       : `<span class="badge badge-err">ERROR</span>`;
-    const detail = (r.status==="done"&&r.result) ? JSON.stringify(r.result,null,2)
-                 : (r.status==="error") ? r.error : "";
-    return `<div class="run-card" onclick="toggleRun('${r.id}')">
-      <div class="run-card-inner" style="border-left:3px solid ${r.color}">
+
+    // Format result nicely based on agent type
+    let resultHtml = "";
+    if (r.status==="done" && r.result && expanded===r.id) {
+      if (r.agentId==="analytics" && r.result.report) {
+        resultHtml = `<div style="font-size:10px;color:var(--textdim);line-height:1.8;white-space:pre-wrap;padding:12px 14px;background:var(--bg)">${r.result.report.replace(/[#*`]/g,"")}</div>`;
+      } else if (r.agentId==="full_pipeline" && r.result.log) {
+        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.log.map(l=>`<div style="font-size:10px;color:${l.startsWith("✓")?"var(--green)":l.startsWith("✗")?"var(--red)":"var(--textdim)"};margin-bottom:4px;font-family:var(--mono)">${l}</div>`).join("")}${r.result.published&&r.result.published.length?r.result.published.map(p=>`<div style="margin-top:8px;padding:8px 10px;background:var(--card);border-left:2px solid var(--green)"><div style="font-size:10px;color:var(--green);font-family:var(--mono)">${p.status.toUpperCase()}</div><div style="font-size:11px;color:var(--text);margin:3px 0">${p.title}</div><a href="${p.url}" target="_blank" style="font-size:9px;color:var(--amber);font-family:var(--mono)">${p.url}</a></div>`).join(""):""}</div>`;
+      } else if (r.agentId==="market_research" && r.result.trending) {
+        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.trending.map(t=>`<div style="margin-bottom:10px;padding:8px 10px;background:var(--card)"><div style="font-size:10px;color:var(--amber);font-family:var(--mono);font-weight:800;margin-bottom:4px">${t.niche}</div><div style="font-size:9px;color:var(--textdim)">Demand: <span style="color:var(--green)">${t.demand}</span> · Competition: <span style="color:var(--blue)">${t.competition}</span> · Avg: <span style="color:var(--amber)">${t.avg_price}</span></div><div style="font-size:9px;color:var(--textdim);margin-top:4px">${(t.products||[]).slice(0,2).join(" · ")}</div></div>`).join("")}</div>`;
+      } else if (r.agentId==="product_creator" && Array.isArray(r.result)) {
+        resultHtml = `<div style="padding:12px 14px;background:var(--bg)">${r.result.map(p=>`<div style="margin-bottom:8px;padding:8px 10px;background:var(--card)"><div style="font-size:11px;color:var(--text);font-weight:600;margin-bottom:3px">${p.title}</div><div style="font-size:9px;color:var(--amber);font-family:var(--mono)">${p.price}</div></div>`).join("")}</div>`;
+      } else {
+        resultHtml = `<div style="padding:12px 14px;background:var(--bg)"><pre style="font-size:9px;color:var(--textdim);white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto">${JSON.stringify(r.result,null,2)}</pre></div>`;
+      }
+    }
+    if (r.status==="error" && expanded===r.id) {
+      resultHtml = `<div style="padding:12px 14px;background:var(--bg);font-size:10px;color:var(--red);font-family:var(--mono)">${r.error}</div>`;
+    }
+
+    return `<div class="run-card">
+      <div class="run-card-inner" style="border-left:3px solid ${r.color}" onclick="toggleRun('${r.id}')">
         <div class="run-icon">${r.icon}</div>
         <div class="run-meta">
           <div class="run-name" style="color:${r.color}">${r.name} ${badge}</div>
           ${r.status==="running"?`<div class="run-msg">Running...</div>`:""}
-          ${r.status==="error"?`<div class="run-msg" style="color:var(--red)">${r.error}</div>`:""}
+          ${r.status==="done"&&!expanded?`<div class="run-msg">Click to expand results</div>`:""}
         </div>
         <div class="run-time">${r.time}</div>
       </div>
-      ${detail?`<div class="run-detail ${expanded===r.id?"on":""}" id="rd-${r.id}"><pre>${detail}</pre></div>`:""}
+      ${resultHtml}
     </div>`;
   }).join("");
 }
