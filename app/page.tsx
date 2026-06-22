@@ -1,4 +1,4 @@
-import HermesPage from "@/components/HermesPage";
+import { redirect } from "next/navigation";
 export default function Page() {
-  return <HermesPage />;
+  redirect("/index.html");
 }
