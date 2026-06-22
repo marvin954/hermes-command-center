@@ -1,7 +1,4 @@
-"use client";
-import { useEffect, useRef } from "react";
-
-const HTML = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -540,29 +537,29 @@ function updateActive() {
 function renderRuns() {
   const c = document.getElementById("runs-container");
   if (!runs.length) {
-    c.innerHTML = \`<div class="empty-state"><div class="empty-icon">🤖</div><div class="empty-t">No runs yet. Fire an agent to get started.</div></div>\`;
+    c.innerHTML = `<div class="empty-state"><div class="empty-icon">🤖</div><div class="empty-t">No runs yet. Fire an agent to get started.</div></div>`;
     return;
   }
   c.innerHTML = runs.map(r => {
     const badge = r.status==="running"
-      ? \`<span class="badge badge-run">RUNNING</span>\`
+      ? `<span class="badge badge-run">RUNNING</span>`
       : r.status==="done"
-      ? \`<span class="badge badge-done">DONE \${r.dur||""}</span>\`
-      : \`<span class="badge badge-err">ERROR</span>\`;
+      ? `<span class="badge badge-done">DONE ${r.dur||""}</span>`
+      : `<span class="badge badge-err">ERROR</span>`;
     const detail = (r.status==="done"&&r.result) ? JSON.stringify(r.result,null,2)
                  : (r.status==="error") ? r.error : "";
-    return \`<div class="run-card" onclick="toggleRun('\${r.id}')">
-      <div class="run-card-inner" style="border-left:3px solid \${r.color}">
-        <div class="run-icon">\${r.icon}</div>
+    return `<div class="run-card" onclick="toggleRun('${r.id}')">
+      <div class="run-card-inner" style="border-left:3px solid ${r.color}">
+        <div class="run-icon">${r.icon}</div>
         <div class="run-meta">
-          <div class="run-name" style="color:\${r.color}">\${r.name} \${badge}</div>
-          \${r.status==="running"?\`<div class="run-msg">Running...</div>\`:""}
-          \${r.status==="error"?\`<div class="run-msg" style="color:var(--red)">\${r.error}</div>\`:""}
+          <div class="run-name" style="color:${r.color}">${r.name} ${badge}</div>
+          ${r.status==="running"?`<div class="run-msg">Running...</div>`:""}
+          ${r.status==="error"?`<div class="run-msg" style="color:var(--red)">${r.error}</div>`:""}
         </div>
-        <div class="run-time">\${r.time}</div>
+        <div class="run-time">${r.time}</div>
       </div>
-      \${detail?\`<div class="run-detail \${expanded===r.id?"on":""}" id="rd-\${r.id}"><pre>\${detail}</pre></div>\`:""}
-    </div>\`;
+      ${detail?`<div class="run-detail ${expanded===r.id?"on":""}" id="rd-${r.id}"><pre>${detail}</pre></div>`:""}
+    </div>`;
   }).join("");
 }
 
@@ -582,23 +579,23 @@ function renderListings() {
   const el = document.getElementById("listings-tbl");
   document.getElementById("listings-count").textContent = listings.length + " listings on mvpdealz";
   if (!listings.length) {
-    el.innerHTML = \`<div class="empty-state"><div class="empty-icon">🏪</div><div class="empty-t">No active listings yet. Run the Full Pipeline to create some.</div></div>\`;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🏪</div><div class="empty-t">No active listings yet. Run the Full Pipeline to create some.</div></div>`;
     return;
   }
-  el.innerHTML = \`<div class="tbl">
-    <div class="tbl-hdr tbl-etsy">\${["LISTING","VIEWS","FAVES","PRICE","STATUS"].map(h=>\`<span class="th">\${h}</span>\`).join("")}</div>
-    \${listings.map(l=>{
+  el.innerHTML = `<div class="tbl">
+    <div class="tbl-hdr tbl-etsy">${["LISTING","VIEWS","FAVES","PRICE","STATUS"].map(h=>`<span class="th">${h}</span>`).join("")}</div>
+    ${listings.map(l=>{
       const price = l.price?(l.price.amount/l.price.divisor).toFixed(2):"—";
       const statusColor = l.state==="active"?"var(--green)":"var(--textdim)";
-      return \`<div class="tbl-row tbl-etsy">
-        <div><div class="tc-title">\${l.title}</div><div class="tc-sub">#\${l.listing_id}</div></div>
-        <span class="tc" style="color:var(--blue)">\${l.views||0}</span>
-        <span class="tc" style="color:var(--purple)">\${l.num_favorers||0}</span>
-        <span class="tc" style="color:var(--amber)">$\${price}</span>
-        <span class="badge" style="color:\${statusColor};background:\${statusColor}15;border:1px solid \${statusColor}30">\${l.state.toUpperCase()}</span>
-      </div>\`;
+      return `<div class="tbl-row tbl-etsy">
+        <div><div class="tc-title">${l.title}</div><div class="tc-sub">#${l.listing_id}</div></div>
+        <span class="tc" style="color:var(--blue)">${l.views||0}</span>
+        <span class="tc" style="color:var(--purple)">${l.num_favorers||0}</span>
+        <span class="tc" style="color:var(--amber)">$${price}</span>
+        <span class="badge" style="color:${statusColor};background:${statusColor}15;border:1px solid ${statusColor}30">${l.state.toUpperCase()}</span>
+      </div>`;
     }).join("")}
-  </div>\`;
+  </div>`;
 }
 
 // ── TABS ───────────────────────────────────────────────────────────
@@ -619,16 +616,3 @@ loadStats();
 </script>
 </body>
 </html>
-`;
-
-export default function HermesPage() {
-  const ref = useRef<HTMLIFrameElement>(null);
-  return (
-    <iframe
-      ref={ref}
-      srcDoc={HTML}
-      style={{ width:"100%", height:"100vh", border:"none" }}
-      title="HERMES Command Center"
-    />
-  );
-}
