@@ -218,6 +218,7 @@ a { text-decoration:none; }
       <button class="abar-btn" id="ab-fiximg" onclick="fire('fix_images')" style="color:var(--green);border-color:rgba(0,208,132,0.4)">🖼️ FIX IMAGES</button>
       <button class="abar-btn" id="ab-queue" onclick="fire('process_queue')" style="color:var(--cyan);border-color:rgba(0,200,200,0.4)">⏳ PROCESS QUEUE</button>
       <button class="abar-btn" id="ab-qstatus" onclick="fire('queue_status')" style="color:var(--purple);border-color:rgba(155,89,245,0.4)">📋 QUEUE STATUS</button>
+      <button class="abar-btn" onclick="openGPModal()" style="color:var(--amber);border-color:rgba(245,166,35,0.4)">📦 GENERATE PRODUCT</button>
       <span class="cron-info">AUTO-RUN: <span style="color:var(--amber)">09:00 UTC</span> daily</span>
     </div>
     <div id="feed">
@@ -400,6 +401,29 @@ a { text-decoration:none; }
 
 </div>
 
+<!-- GENERATE PRODUCT MODAL -->
+<div id="gp-overlay" onclick="if(event.target===this)closeGPModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--borderhi);width:100%;max-width:500px;padding:0">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:var(--text);letter-spacing:0.1em">📦 GENERATE PRODUCT — AI ASSET SPRINT</span>
+      <button onclick="closeGPModal()" style="background:none;border:none;color:var(--dim);font-size:18px">×</button>
+    </div>
+    <div style="padding:20px">
+      <div style="font-size:9px;color:var(--dim);letter-spacing:0.12em;margin-bottom:6px">LISTING ID</div>
+      <input id="gp-listing-id" placeholder="e.g. 4526326120" style="width:100%;background:var(--card);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;margin-bottom:12px" />
+      <div style="font-size:9px;color:var(--dim);letter-spacing:0.12em;margin-bottom:6px">PRODUCT TITLE</div>
+      <input id="gp-title" placeholder="e.g. Small Business Planner Bundle" style="width:100%;background:var(--card);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;margin-bottom:12px" />
+      <div style="font-size:9px;color:var(--dim);letter-spacing:0.12em;margin-bottom:6px">NICHE</div>
+      <input id="gp-niche" placeholder="e.g. small business tools" value="digital products" style="width:100%;background:var(--card);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;margin-bottom:16px" />
+      <div style="font-size:9px;color:var(--dim);margin-bottom:12px">This will generate a complete HTML digital product using the AI Asset Sprint pipeline and upload it to the Etsy listing as the downloadable file.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button onclick="closeGPModal()" style="font-size:9px;font-family:var(--mono);color:var(--dim);background:none;border:1px solid var(--border);padding:7px 14px">CANCEL</button>
+        <button onclick="runGenerateProduct()" style="font-size:9px;font-family:var(--mono);font-weight:800;color:var(--bg);background:var(--amber);border:none;padding:7px 16px">GENERATE & UPLOAD →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = "https://v0-etsymind-react-app-git-main-marvin-stokes-projects.vercel.app";
 let runs = [], expanded = null, activeCount = 0, listings = [];
@@ -471,6 +495,7 @@ const AGENT_META = {
   fix_images:      { name:"FIX ALL IMAGES",   icon:"🖼️", color:"var(--green)" },
   process_queue:   { name:"PROCESS QUEUE",   icon:"⏳", color:"var(--cyan)" },
   queue_status:    { name:"QUEUE STATUS",     icon:"📋", color:"var(--purple)" },
+  generate_product:{ name:"GENERATE PRODUCT", icon:"📦", color:"var(--amber)" },
 };
 
 async function fire(agentId) {
@@ -614,6 +639,20 @@ function renderResult(r) {
     </div>`;
   }
 
+  if (r.agentId === "generate_product") {
+    const log = r.result.log || [];
+    const logHtml = log.map((l) =>
+      `<div class="log-line" style="color:${l.startsWith("✓")?"var(--green)":l.startsWith("✗")?"var(--red)":"var(--dim)"}">${l}</div>`
+    ).join("");
+    const summary = r.result.success
+      ? `<div style="margin-top:12px;padding:10px 14px;background:var(--card);border-left:2px solid var(--green)">
+          <div style="font-size:10px;color:var(--green);font-weight:800;margin-bottom:4px">✓ PRODUCT UPLOADED</div>
+          <div style="font-size:9px;color:var(--dim)">File: ${r.result.filename} · Size: ${Math.round((r.result.size||0)/1024)}KB</div>
+        </div>`
+      : `<div style="margin-top:12px;padding:10px 14px;background:var(--card);border-left:2px solid var(--red)"><div style="font-size:10px;color:var(--red)">${r.result.error||"Failed"}</div></div>`;
+    return `<div class="result-log">${logHtml}${summary}</div>`;
+  }
+
   if (r.agentId === "fix_images") {
     const log = r.result.log || [];
     const logHtml = log.map((l) =>
@@ -724,6 +763,61 @@ async function loadListings() {
   } catch(e) {
     document.getElementById("listings-count").textContent = "Error loading listings";
   }
+}
+
+// ── GENERATE PRODUCT MODAL ─────────────────────────────────────────
+function openGPModal() {
+  document.getElementById("gp-overlay").style.display = "flex";
+}
+function closeGPModal() {
+  document.getElementById("gp-overlay").style.display = "none";
+}
+async function runGenerateProduct() {
+  const listing_id = document.getElementById("gp-listing-id").value.trim();
+  const title = document.getElementById("gp-title").value.trim();
+  const niche = document.getElementById("gp-niche").value.trim();
+  if (!listing_id || !title) { alert("Listing ID and Title are required"); return; }
+  closeGPModal();
+  await fire("generate_product", { listing_id, title, niche });
+}
+
+// Override fire() to accept params directly for generate_product
+const _originalFire = fire;
+async function fire(agentId, customParams) {
+  const meta = AGENT_META[agentId];
+  if (!meta) return;
+  const niche = document.getElementById("niche-input")?.value || "digital products";
+  let params = customParams || (["full_pipeline","product_creator"].includes(agentId) ? { niche } : undefined);
+  const runId = "r" + Date.now();
+  const startTime = Date.now();
+
+  runs.unshift({ id:runId, agentId, name:meta.name, icon:meta.icon, color:meta.color,
+                 status:"running", time:ts(), result:null, error:null, dur:null });
+  activeCount++;
+  renderRuns();
+  updateActive();
+  if (currentTab !== "command") {
+    document.querySelector(".tab[data-tab='command']").click();
+  }
+
+  try {
+    const data = await api("/api/run", { agent: agentId, params });
+    const run = runs.find(r => r.id === runId);
+    run.status = "done";
+    run.result = data.result;
+    run.dur = ((Date.now()-startTime)/1000).toFixed(1) + "s";
+    expanded = runId;
+    if (["analytics","full_pipeline"].includes(agentId)) loadStats();
+  } catch(e) {
+    const run = runs.find(r => r.id === runId);
+    run.status = "error";
+    run.error = e.message;
+    expanded = runId;
+  }
+
+  activeCount--;
+  renderRuns();
+  updateActive();
 }
 
 // ── INIT ───────────────────────────────────────────────────────────
