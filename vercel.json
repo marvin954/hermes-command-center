@@ -1,16 +1,5 @@
 {
-  "functions": {
-    "app/api/run/route.ts": {
-      "maxDuration": 300
-    },
-    "app/api/cron/route.ts": {
-      "maxDuration": 300
-    }
-  },
-  "crons": [
-    {
-      "path": "/api/cron",
-      "schedule": "0 9 * * *"
-    }
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
   ]
 }
