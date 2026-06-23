@@ -216,6 +216,8 @@ a { text-decoration:none; }
       <button class="abar-btn" id="ab-analytics" onclick="fire('analytics')" style="color:var(--green);border-color:rgba(0,208,132,0.4)">📊 ANALYTICS</button>
       <button class="abar-btn" id="ab-manager" onclick="fire('listing_manager')" style="color:var(--blue);border-color:rgba(61,142,245,0.4)">📋 LISTING MANAGER</button>
       <button class="abar-btn" id="ab-fiximg" onclick="fire('fix_images')" style="color:var(--green);border-color:rgba(0,208,132,0.4)">🖼️ FIX IMAGES</button>
+      <button class="abar-btn" id="ab-queue" onclick="fire('process_queue')" style="color:var(--cyan);border-color:rgba(0,200,200,0.4)">⏳ PROCESS QUEUE</button>
+      <button class="abar-btn" id="ab-qstatus" onclick="fire('queue_status')" style="color:var(--purple);border-color:rgba(155,89,245,0.4)">📋 QUEUE STATUS</button>
       <span class="cron-info">AUTO-RUN: <span style="color:var(--amber)">09:00 UTC</span> daily</span>
     </div>
     <div id="feed">
@@ -467,6 +469,8 @@ const AGENT_META = {
   analytics:       { name:"ANALYTICS",        icon:"📊", color:"var(--green)" },
   listing_manager: { name:"LISTING MANAGER",  icon:"📋", color:"var(--blue)" },
   fix_images:      { name:"FIX ALL IMAGES",   icon:"🖼️", color:"var(--green)" },
+  process_queue:   { name:"PROCESS QUEUE",   icon:"⏳", color:"var(--cyan)" },
+  queue_status:    { name:"QUEUE STATUS",     icon:"📋", color:"var(--purple)" },
 };
 
 async function fire(agentId) {
@@ -583,6 +587,31 @@ function renderResult(r) {
         <div class="product-title">${p.title}</div>
         <div class="product-price">${p.price} &nbsp;·&nbsp; <span style="color:var(--dim)">${p.category||"Digital Downloads"}</span></div>
       </div>`).join("")}</div>`;
+  }
+
+  if (r.agentId === "queue_status") {
+    const q = r.result;
+    return `<div style="padding:16px 20px">
+      <div style="display:flex;gap:20px;margin-bottom:16px">
+        <div style="text-align:center"><div style="font-size:24px;font-weight:200;color:var(--amber)">${q.pending||0}</div><div style="font-size:8px;color:var(--dim)">PENDING</div></div>
+        <div style="text-align:center"><div style="font-size:24px;font-weight:200;color:var(--green)">${q.published||0}</div><div style="font-size:8px;color:var(--dim)">PUBLISHED</div></div>
+        <div style="text-align:center"><div style="font-size:24px;font-weight:200;color:var(--red)">${q.failed||0}</div><div style="font-size:8px;color:var(--dim)">FAILED</div></div>
+      </div>
+      ${(q.items||[]).filter(i => i.status==="pending").map(i => `
+        <div style="padding:10px 14px;margin-bottom:4px;background:var(--card);border-left:2px solid var(--amber)">
+          <div style="font-size:10px;color:var(--text);margin-bottom:3px">${i.title}</div>
+          <div style="font-size:8px;color:var(--dim)">${i.price} · ${i.status.toUpperCase()}</div>
+        </div>`).join("")}
+    </div>`;
+  }
+
+  if (r.agentId === "process_queue") {
+    if (r.result.message) return `<div style="padding:14px 20px;font-size:11px;color:var(--dim)">${r.result.message}</div>`;
+    return `<div style="padding:14px 20px">
+      <div style="font-size:10px;color:var(--green);font-weight:800;margin-bottom:6px">✓ ${r.result.status?.toUpperCase()||"PUBLISHED"}</div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:6px">${r.result.title||""}</div>
+      <a href="${r.result.url||""}" target="_blank" style="font-size:9px;color:var(--amber)">${r.result.url||""}</a>
+    </div>`;
   }
 
   if (r.agentId === "fix_images") {
